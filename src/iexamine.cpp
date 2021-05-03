@@ -1378,6 +1378,41 @@ void iexamine::locked_object( player &p, const tripoint &examp )
     } );
 
     if( prying_items.empty() ) {
+        if( prying_items.empty() ) {
+        // Check whether it's pickable too. if it is and there's a lock pick item, call locked_object_pickable
+        switch(g->m.has_furn( examp ) ? g->m.furnname( examp ) : g->m.tername( examp ) ) {
+            case t_chaingate_c:
+            case t_door_locked:
+            case t_door_locked_alarm:
+            case t_door_locked_peep:
+            case t_door_metal_pickable:
+            case t_door_bar_locked:
+            case f_gunsafe_ml:
+                std::vector<item *> picklocks = p.items_with( [&p]( const item & it ) {
+                    // Don't search for worn items such as hairpins
+                    if( p.get_item_position( &it ) >= -1 ) {
+                        return it.type->get_use( "picklock" ) != nullptr;
+                    }
+                    return false;
+                } );
+                if( picklocks.empty() ) {
+                    add_msg( minfo, ( "The %s is locked.  If only you had something to pry it open or pick its lock with…" ),
+                    g->m.has_furn( examp ) ? g->m.furnname( examp ) : g->m.tername( examp ) );
+                } else {
+                    add_msg( minfo, ( "The %s is locked.  You don't have anything to pry it with, so you pick its lock instead." ),
+                    g->m.has_furn( examp ) ? g->m.furnname( examp ) : g->m.tername( examp ) );
+                    locked_object_pickable(p, examp);  // call locked_object pickable
+                }
+                break;
+            default:
+                add_msg( minfo, ( "The %s is locked.  If only you had something to pry it with…" ),
+                 g->m.has_furn( examp ) ? g->m.furnname( examp ) : g->m.tername( examp ) );
+                 break;
+            }
+        } 
+
+        return;
+    }
         add_msg( m_info, _( "The %s is locked.  If only you had something to pry it with…" ),
                  g->m.has_furn( examp ) ? g->m.furnname( examp ) : g->m.tername( examp ) );
         return;
